@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-redis
+  name: {{ .Release.Name }}-cloudexplorer-redis-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cloudexplorer-redis-deployment
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-cloudexplorer-redis-deployment
+    spec:
+      containers:
+        - args:
+            - redis-server
+            - --requirepass
+            - Password123@redis
+          image: registry.cn-qingdao.aliyuncs.com/cloudexplorer/redis:7.0.11-alpine
+          name: redis
+          ports:
+            - containerPort: 6379
+          resources:
+            limits:
+              memory: "1Gi"
+      hostname: redis
+      restartPolicy: Always

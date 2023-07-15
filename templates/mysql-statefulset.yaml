@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-mysql
+  name: {{ .Release.Name }}-cloudexplorer-mysql-statefulset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cloudexplorer-mysql-statefulset
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-cloudexplorer-mysql-statefulset
+    spec:
+      containers:
+        - env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: Password123@mysql
+          image: registry.cn-qingdao.aliyuncs.com/cloudexplorer/mysql:8.0
+          name: mysql
+          ports:
+            - containerPort: 3306
+          resources:
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - mountPath: /docker-entrypoint-initdb.d/init.sql
+              name: cloudexplorer-mysql-configmap
+              subPath: init.sql
+            - mountPath: /etc/my.cnf
+              name: cloudexplorer-mysql-configmap
+              subPath: my.cnf
+            - mountPath: /var/lib/mysql
+              name: data
+      hostname: mysql
+      restartPolicy: Always
+      volumes:
+        - name: cloudexplorer-mysql-configmap
+          configMap:
+            name: {{ .Release.Name }}-cloudexplorer-mysql-configmap
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+    whenScaled: Delete

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer
+  name: {{ .Release.Name }}-cloudexplorer
+spec:
+  replicas: {{ .Values.cloudexplorer.core.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cloudexplorer
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-cloudexplorer
+    spec:
+      containers:
+        - name: cloudexplorer-core
+          image: {{ .Values.cloudexplorer.core.image.repository }}:{{ .Values.cloudexplorer.core.image.tag }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9000
+            failureThreshold: 20
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+          ports:
+            - containerPort: 9000
+          resources:
+            limits:
+              memory: {{ .Values.cloudexplorer.core.resources.limits.memory }}
+          volumeMounts:
+            - mountPath: /opt/cloudexplorer/data
+              name: cloudexplorer-pvc
+              subPath: data
+            - mountPath: /opt/cloudexplorer/apps/extra 
+              name: cloudexplorer-pvc
+              subPath: apps/extra
+            - mountPath: /opt/cloudexplorer/logs
+              name: logs-volume
+            - mountPath: /opt/cloudexplorer/conf/cloudexplorer.properties
+              name: cloudexplorer-configmap
+              subPath: cloudexplorer.properties
+            - mountPath: /opt/cloudexplorer/conf/redisson.yml
+              name: cloudexplorer-configmap
+              subPath: redisson.yml
+      hostname: cloudexplorer
+      restartPolicy: Always
+      volumes:
+        - name: logs-volume
+          emptyDir: {}
+        - name: cloudexplorer-configmap
+          configMap:
+            name: {{ .Release.Name }}-cloudexplorer-configmap
+        - name: cloudexplorer-pvc
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-cloudexplorer-pvc

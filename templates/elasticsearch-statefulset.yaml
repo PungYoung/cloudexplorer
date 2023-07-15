@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-elasticsearch
+  name: {{ .Release.Name }}-cloudexplorer-elasticsearch-statefulset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cloudexplorer-elasticsearch-statefulset
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-cloudexplorer-elasticsearch-statefulset
+    spec:
+      containers:
+        - env:
+            - name: CE_ELASTICSEARCH_CLUSTER_NAME
+              value: ce-elasticsearch-cluster
+            - name: CE_ELASTICSEARCH_NODE_NAME
+              value: es01
+            - name: CONTAINER_TIMEZONE
+              value: Asia/Shanghai
+            - name: SET_CONTAINER_TIMEZONE
+              value: "true"
+          image: registry.cn-qingdao.aliyuncs.com/cloudexplorer/elasticsearch:7.17.9
+          securityContext:
+            runAsUser: 1002
+            runAsGroup: 0
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9200
+            failureThreshold: 20
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          name: elasticsearch
+          ports:
+            - containerPort: 9200
+          resources:
+            limits:
+              memory: "6Gi"
+          volumeMounts:
+            - mountPath: /usr/share/elasticsearch/data
+              name: data
+            - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              name: cloudexplorer-elasticsearch-configmap
+              subPath: elasticsearch.yml
+            - mountPath: /usr/share/elasticsearch/config/jvm.options.d/jvm.options
+              name: cloudexplorer-elasticsearch-configmap
+              subPath: elasticsearch-jvm.options
+      hostname: elasticsearch
+      restartPolicy: Always
+      volumes:
+        - name: cloudexplorer-elasticsearch-configmap
+          configMap:
+            name: {{ .Release.Name }}-cloudexplorer-elasticsearch-configmap
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.elasticsearch.pvc.storage  }}
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
+    whenScaled: Delete

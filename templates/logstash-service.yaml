@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-logstash
+  name: {{ .Release.Name }}-cloudexplorer-logstash-serivce
+spec:
+  ports:
+    - name: "5044"
+      port: 5044
+      targetPort: 5044
+    - name: "9600"
+      port: 9600
+      targetPort: 9600
+  selector:
+    app: {{ .Release.Name }}-cloudexplorer-logstash-deployment

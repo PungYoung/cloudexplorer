@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-cloudexplorer-logstash-configmap
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-logstash
+data:
+  logstash.yml: |
+    pipeline.batch.size: 1000
+    pipeline.workers: 4
+    pipeline.batch.delay: 10
+    http.host: "0.0.0.0"
+    xpack.monitoring.elasticsearch.hosts: ["http://{{ .Release.Name }}-cloudexplorer-elasticsearch-service:9200"]
+  
+  logstash.conf: |
+    input {
+      file {
+        path => ["/opt/cloudexplorer/logs/*/*"]
+        type => "system"
+        codec => multiline {
+          pattern => "^\[+"
+          negate => "true"
+          what => "previous"
+          charset => "UTF-8"
+          auto_flush_interval => 2
+        }
+      }
+      file {
+        path => ["/opt/cloudexplorer/logs/*/api/*"]
+        type => "api"
+        codec => json {charset => "UTF-8"}
+      }
+    }
+
+    filter {
+      if [type] == "api"{
+        json {
+        source => "message"
+        }
+      }
+      if [type] == "system"{
+        grok{
+          match => {"message" =>"(?m)^\[%{INT:pid}\]%{SPACE}\[%{DATA:module}\]%{SPACE}%{SPACE}%{TIMESTAMP_ISO8601:createTime}%{SPACE}\[%{DATA:threadName}\]%{SPACE}%{LOGLEVEL:level}%{SPACE}%{JAVACLASS:javaClass}#%{GREEDYDATA:methodName}:%{GREEDYDATA:lineNumber}%{SPACE}-%{GREEDYDATA:msg}"}
+        }
+        }
+      }
+
+    output {
+        if [type] == "system"{
+          elasticsearch {
+            hosts => ["http://{{ .Release.Name }}-cloudexplorer-elasticsearch-service:9200"]
+            index => "ce-file-system-logs"
+          }
+        }
+        if [type] == "api"{
+          elasticsearch {
+            hosts => ["http://{{ .Release.Name }}-cloudexplorer-elasticsearch-service:9200"]
+            index => "ce-file-api-logs"
+          }
+        }
+    }

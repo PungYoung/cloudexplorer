@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-logstash
+  name: {{ .Release.Name }}-cloudexplorer-logstash-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cloudexplorer-logstash-deployment
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-cloudexplorer-logstash-deployment
+    spec:
+      containers:
+        - env:
+            - name: TZ
+              value: Asia/Shanghai
+          image: registry.cn-qingdao.aliyuncs.com/cloudexplorer/logstash:7.17.9
+          name: logstash
+          ports:
+            - containerPort: 5044
+            - containerPort: 9600
+          resources:
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - mountPath: /usr/share/logstash/config/logstash.yml
+              name: cloudexplorer-logstash-configmap
+              subPath: logstash.yml
+            - mountPath: /usr/share/logstash/pipeline/logstash.conf
+              name: cloudexplorer-logstash-configmap
+              subPath: logstash.conf
+      hostname: logstash
+      restartPolicy: Always
+      volumes:
+        - name: cloudexplorer-logstash-configmap
+          configMap:
+            name: {{ .Release.Name }}-cloudexplorer-logstash-configmap

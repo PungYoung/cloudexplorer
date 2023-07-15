@@ -1,0 +1,79 @@
+global:
+  enableServiceLinks: false
+
+cloudexplorer:
+  core:
+    image:
+      repository: registry.cn-qingdao.aliyuncs.com/cloudexplorer/cloudexplorer-core
+      tag: v1.2.0
+      pullPolicy: IfNotPresent
+    replicaCount: 1
+    resources:
+      limits:
+        memory: 8Gi
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 9000
+  pvc:
+    storage: 1Gi
+
+elasticsearch:
+  statefulset:
+    image:
+      repository: registry.cn-qingdao.aliyuncs.com/cloudexplorer/elasticsearch
+      tag: "7.17.9"
+    runAsUser: 1002
+    runAsGroup: 0
+    resources:
+      limits:
+        memory: 6Gi
+  pvc:
+    storage: 1Gi
+  service:
+    port: 9200
+    targetPort: 9200
+
+logstash:
+  deployment:
+    image:
+      repository: registry.cn-qingdao.aliyuncs.com/cloudexplorer/logstash
+      tag: "7.17.9"
+    resources:
+      limits:
+        memory: 2Gi
+  service:
+    - name: "5044"
+      port: 5044
+      targetPort: 5044
+    - name: "9600"
+      port: 9600
+      targetPort: 9600
+   
+mysql:
+  statefulset:
+    image:
+      repository: registry.cn-qingdao.aliyuncs.com/cloudexplorer/mysql
+      tag: "8.0"
+    database:
+      username: root
+      password: Password123@mysql
+      db: ce
+  pvc:
+    storage: 1Gi
+  service:
+    port: 3306
+    targetPort: 3306
+
+redis:
+  deployment:
+    image:
+      repository: registry.cn-qingdao.aliyuncs.com/cloudexplorer/redis
+      tag: 7.0.11-alpine
+    password: Password123@redis
+    resources:
+      limits:
+        memory: 1Gi
+  service:
+    port: 6379
+    targetPort: 6379

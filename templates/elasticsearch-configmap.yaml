@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-cloudexplorer-elasticsearch-configmap
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer-elasticsearch
+data:
+  elasticsearch.yml: |
+    cluster.name: ${CE_ELASTICSEARCH_CLUSTER_NAME}
+    node.name: ${CE_ELASTICSEARCH_NODE_NAME}
+    discovery.type: single-node
+    #discovery.seed_hosts: ${CE_ELASTICSEARCH_NODE_NAME}
+    #cluster.initial_master_nodes: ${CE_ELASTICSEARCH_NODE_NAME}
+    bootstrap.memory_lock: false
+    network.host: 0.0.0.0
+    http.cors.enabled: true
+    http.cors.allow-origin: "*"
+    http.cors.allow-methods: "GET"
+    xpack.security.enabled: false
+    #http.cors.allow-headers: Authorization
+  
+  elasticsearch-jvm.options: |
+    -Xms4g
+    -Xmx4g
+
+    ## GC configuration
+    8-13:-XX:+UseConcMarkSweepGC
+    8-13:-XX:CMSInitiatingOccupancyFraction=75
+    8-13:-XX:+UseCMSInitiatingOccupancyOnly
+
+    14-:-XX:+UseG1GC
+    14-:-XX:G1ReservePercent=25
+    14-:-XX:InitiatingHeapOccupancyPercent=30
+
+    ## JVM temporary directory
+    -Djava.io.tmpdir=${ES_TMPDIR}
+
+    ## heap dumps
+
+    # generate a heap dump when an allocation from the Java heap fails
+    # heap dumps are created in the working directory of the JVM
+    -XX:+HeapDumpOnOutOfMemoryError
+
+    # specify an alternative path for heap dumps; ensure the directory exists and
+    # has sufficient space
+    -XX:HeapDumpPath=data
+
+    # specify an alternative path for JVM fatal error logs
+    -XX:ErrorFile=logs/hs_err_pid%p.log
+
+    ## JDK 8 GC logging
+    8:-XX:+PrintGCDetails
+    8:-XX:+PrintGCDateStamps
+    8:-XX:+PrintTenuringDistribution
+    8:-XX:+PrintGCApplicationStoppedTime
+    8:-Xloggc:logs/gc.log
+    8:-XX:+UseGCLogFileRotation
+    8:-XX:NumberOfGCLogFiles=32
+    8:-XX:GCLogFileSize=64m
+
+    # JDK 9+ GC logging
+    9-:-Xlog:gc*,gc+age=trace,safepoint:file=logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m
+

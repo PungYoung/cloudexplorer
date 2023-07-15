@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-cloudexplorer-configmap
+  labels:
+    app: {{ .Release.Name }}-cloudexplorer
+data:
+  cloudexplorer.properties: |
+    ce.datasource.url=jdbc:mysql://{{ .Release.Name }}-cloudexplorer-mysql-service:{{ .Values.mysql.service.port }}/{{ .Values.mysql.statefulset.database.db }}?autoReconnect=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    ce.datasource.password={{ .Values.mysql.statefulset.database.password }}
+    ce.datasource.username={{ .Values.mysql.statefulset.database.username }}
+    ce.datasource.quartz.url=jdbc:mysql://{{ .Release.Name }}-cloudexplorer-mysql-service:{{ .Values.mysql.service.port }}/{{ .Values.mysql.statefulset.database.db }}?autoReconnect=false&useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    ce.datasource.quartz.password={{ .Values.mysql.statefulset.database.password }}
+    ce.datasource.quartz.username={{ .Values.mysql.statefulset.database.username }}
+    eureka.client.service-url.defaultZone=http://127.0.0.1:8761/eureka/
+    eureka.instance.prefer-ip-address=true
+    eureka.instance.hostname=eureka
+    server.max-http-header-size=4086KB
+    spring.elasticsearch.uris={{ .Release.Name }}-cloudexplorer-elasticsearch-service:{{ .Values.elasticsearch.service.port }}
+    #spring.elasticsearch.password=ES_PASSWORD
+    #spring.elasticsearch.username=ES_USER
+    spring.elasticsearch.connection-timeout=10s
+    spring.elasticsearch.read-timeout=30s
+    jwt.expire.minutes=100
+    spring.servlet.multipart.max-file-size=50MB
+    spring.servlet.multipart.max-request-size=50MB
+    logger.level=INFO
+    mybatis-plus.configuration.log-impl=org.apache.ibatis.logging.nologging.NoLoggingImpl
+    spring.redis.redisson.file=file:/opt/cloudexplorer/conf/redisson.yml
+  
+  redisson.yml: |
+    singleServerConfig:
+      password: {{ .Values.redis.deployment.password }}
+      address: "redis://{{ .Release.Name }}-cloudexplorer-redis-service:{{ .Values.redis.service.port }}"
+      database: 2
+    threads: 8
+    nettyThreads: 32
+    codec: !<org.redisson.codec.SerializationCodec> {}
